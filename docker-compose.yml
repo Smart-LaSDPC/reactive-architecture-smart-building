@@ -1,0 +1,116 @@
+version: '3.8'
+
+networks:
+  test-network:
+    name: test-network
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 159.100.10.0/24
+volumes:
+  configFolder:
+services:
+  fastdata:
+    image: lensesio/fast-data-dev
+    container_name: fastdata
+    ports:
+      - 3030:3030 # Web Server
+      - 9092:9092 # Kafka Broker
+      - 8081:8081 # Schema Registry
+    environment:
+      - SAMPLEDATA=0
+      - REST_PORT=0
+      - FORWARDLOGS=0
+      - RUNTESTS=0
+      - DISABLE_JMX=1
+      - CONNECTORS=${CONNECTOR}
+      - WEB_PORT=0
+      - DISABLE=hive-1.1
+      - net=host
+    volumes:
+      - ./fastdata/connectors:/connectors
+    # command: sh -c "connect-cli create mqtt < connectors/mqtt-source.properties"
+    # command: sh -c "kafka kafka-topics --create --topic signals --bootstrap-server 159.100.10.5:9092"
+    networks:
+      test-network:
+        ipv4_address: 159.100.10.5
+    healthcheck:
+      test: nc -z 159.100.10.5 9092 || exit -1
+      start_period: 15s
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    depends_on:
+      mqtt:
+        condition: service_healthy
+  mqtt: # MOSQUITTO BROKER
+    image: eclipse-mosquitto:2
+    container_name: mqtt
+    ports:
+      - 8080:8080 # Rest API
+      - 8883:8883 # Secure (TLS)
+      - 1883:1883 # Nonsecure
+    volumes:
+      - ./mqtt/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./mqtt/data:/mosquitto/data
+      - ./mqtt/log:/mosquitto/log
+    networks:
+      test-network:
+        ipv4_address: 159.100.10.10
+    healthcheck:
+      test: nc -z 159.100.10.10 1883 || exit -1
+      start_period: 15s
+      interval: 5s
+      timeout: 10s
+      retries: 10
+  data-generator: # MOSQUITTO DATA GENERATOR (PUBLISHER)
+    build:
+      context: ./data-generator
+      dockerfile: Dockerfile
+    stdin_open: true 
+    tty: true
+    depends_on:
+      - mqtt
+    networks:
+      test-network:
+        ipv4_address: 159.100.10.11
+  mqtt-subscriber: # MOSQUITTO BROKER SUBSCRIBER
+    build:
+      context: ./mqtt-subscriber
+      dockerfile: Dockerfile
+    depends_on:
+        - mqtt
+    networks:
+      test-network:
+        ipv4_address: 159.100.10.12
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 1680:8080
+    
+  postgres:
+    image: postgres
+    restart: always
+    volumes:
+      - /postgres/schemas/signals.sql:/docker-entrypoint-initdb.d/signals.sql
+    ports:
+      - 5432:5432
+    environment:
+      # POSTGRES_PASSWORD: senha
+      POSTGRES_HOST_AUTH_METHOD: trust
+      PGDATA: /var/lib/postgresql/data
+    networks:
+      test-network:
+        ipv4_address: 159.100.10.20
+  kafka-consumer:
+    build:
+      context: ./kafka-consumer
+      dockerfile: Dockerfile
+    depends_on:
+      fastdata:
+        condition: service_healthy
+    networks:
+      test-network:
+        ipv4_address: 159.100.10.6
