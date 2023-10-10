@@ -19,9 +19,9 @@ def main():
 	client = mqtt.Client(client_id='SUBSSS', clean_session=False)
 	client.on_connect = on_connect
 	client.on_message = on_message
-	client.connect(host='159.100.10.10', port=1883)
+	client.connect(host='127.0.0.1', port=1883)
+	# client.connect(host='159.100.10.10', port=1883)
 	# client.connect(host='172.100.10.10', port=1883)
-	# client.connect(host='127.0.0.0', port=1883)
 	client.loop_forever()
 	
 if __name__ == '__main__':
