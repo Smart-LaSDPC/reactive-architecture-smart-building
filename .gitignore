@@ -3,6 +3,11 @@
 *.timeindex
 *.db
 
-**/data
-**/log
-**/datalog
+kafka/
+zookeeper/data/
+zookeeper/datalog/
+
+mongo-db/db
+
+postgres/
+
