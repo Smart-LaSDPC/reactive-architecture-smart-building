@@ -104,37 +104,43 @@ services:
     networks:
       test-network:
         ipv4_address: 172.100.10.12
-  kafka-connect-postgres:
-    image: confluentinc/cp-kafka-connect:latest
+  debezium-jdbc-sink-connector:
+    image: debezium/connect
+    restart: always
+    hostname: debezium-jdbc-sink-connector
+    container_name: debezium-jdbc-sink-connector
     ports:
-      - "28083:28083"
-    links:
-      - kafka
-      - zookeeper
-      - postgres
+      - "8083:8083"
     environment:
-      CONNECT_BOOTSTRAP_SERVERS: 172.100.10.11:9092
-      CONNECT_REST_PORT: 28083
-      CONNECT_GROUP_ID: "realtime-data"
-      CONNECT_CONFIG_STORAGE_TOPIC: "realtime-data-config"
-      CONNECT_OFFSET_STORAGE_TOPIC: "realtime-data-offsets"
-      CONNECT_STATUS_STORAGE_TOPIC: "realtime-data-status"
-      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
-      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
-      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
-      CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
-      CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
-      CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
-      CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
-      CONNECT_REST_ADVERTISED_HOST_NAME: "localhost"
-      CONNECT_LOG4J_ROOT_LOGLEVEL: DEBUG
-      CONNECT_PLUGIN_PATH: "/usr/share/java,/etc/kafka-connect/jars"
+      GROUP_ID: debezium-jdbc-sink-connector
+      BOOTSTRAP_SERVERS: 172.100.10.11:9092
+      CONFIG_STORAGE_TOPIC: my_connect_configs
+      OFFSET_STORAGE_TOPIC: my_connect_offsets
+      STATUS_STORAGE_TOPIC: my_connect_statuses
+      CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      STATUS_STORAGE_REPLICATION_FACTOR: 1
     volumes:
-      - ./kafka-connect/jars/jdbc-sink-connector:/var/lib/kafka/data
+      - ./kafka-connect/jdbc-sink-connector.json:/conf/jdbc-sink-connector.json
     depends_on:
-      - kafka
       - zookeeper
+      - kafka
       - postgres
+    command:
+      - bash
+      - -c
+      - |
+        echo "Wainting for kafka connect to start..."
+        until [[ "$$(curl -s -o /dev/null -w %{http_code} 172.100.10.13:8083/connectors)" -eq 200 ]]; do
+          echo "test"
+          sleep 1
+        done
+        echo -e "Sending connector"
+        curl -i -X POST -H "Accept:application/json" -H "Content-Type:application/json" 172.100.10.13:8083/connectors/ -d @/conf/jdbc-sink-connector.json
+    networks:
+      test-network:
+        ipv4_address: 172.100.10.13
+  
   postgres:
     image: postgres:latest
     # build:

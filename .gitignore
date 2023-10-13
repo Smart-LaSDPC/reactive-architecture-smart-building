@@ -10,5 +10,5 @@ zookeeper/datalog/
 mongo-db/db
 postgres/db
 
-kafka-connect/jars/debezium-postegresql-cdc-source
+kafka-connect/jars/postegresql-source-connector
 kafka-connect/jars/jdbc-sink-connector
