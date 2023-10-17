@@ -35,18 +35,7 @@ services:
       - mosquitto
     networks:
       test-network:
-        ipv4_address: 172.100.10.6
-  mosquitto-subscriber:
-    build:
-      context: ./mosquitto-subscriber
-      dockerfile: Dockerfile
-    stdin_open: true
-    tty: true
-    depends_on:
-      - mosquitto
-    networks:
-      test-network:
-        ipv4_address: 172.100.10.7    
+        ipv4_address: 172.100.10.6   
   zookeeper:
     image: zookeeper:3.4.9
     restart: unless-stopped
@@ -65,15 +54,16 @@ services:
       test-network:
         ipv4_address: 172.100.10.10
   kafka:
-    image: confluentinc/cp-kafka:5.1.0
+    image: confluentinc/cp-kafka:7.5.1.arm64
     hostname: kafka
     container_name: kafka
+    restart: always
     ports:
       - "9092:9092"
     environment:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
-      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_ZOOKEEPER_CONNECT: "172.100.10.10:2181"
       KAFKA_BROKER_ID: 1
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_CREATE_TOPICS: "realtime-data:1:1"
@@ -108,70 +98,16 @@ services:
     build:
       context: ./go-ingestor
       dockerfile: Dockerfile
+    environment:
+      CONFIG_FILE: /config/config.yaml
+    volumes:
+      - ./go-ingestor/config/config.yaml:/config/config.yaml
     restart: always
     hostname: ingestor
     container_name: ingestor
     depends_on:
       - zookeeper
       - kafka
-      - postgres
     networks:
       test-network:
         ipv4_address: 172.100.10.13
-  
-  postgres:
-    image: postgres:latest
-    # build:
-    # context: ./postgres
-    # dockerfile: Dockerfile
-    restart: always
-    environment:
-      POSTGRES_USER: admin # The PostgreSQL user (useful to connect to the database)
-      POSTGRES_PASSWORD: admin # The PostgreSQL password (useful to connect to the database)
-      # POSTGRES_DB: default_database # The PostgreSQL default database (automatically created at first launch)
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./postgres/configdb/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./postgres/db/:/var/lib/postgresql/data/
-    networks:
-      test-network:
-        ipv4_address: 172.100.10.20
-  adminer:
-    image: adminer
-    restart: always
-    ports:
-      - "8080:8080"
-    networks:
-      test-network:
-        ipv4_address: 172.100.10.21
-  mongo-db:
-    image: mongo:4.0.5
-    hostname: mongo-db
-    container_name: mongo-db
-    expose:
-      - "27017"
-    ports:
-      - "27017:27017"
-    command: --bind_ip_all --smallfiles
-    volumes:
-      - ./mongo-db:/data
-    networks:
-      test-network:
-        ipv4_address: 172.100.10.22
-  mongoclient:
-    image: mongoclient/mongoclient:2.2.0
-    container_name: mongoclient
-    hostname: mongoclient
-    depends_on:
-      - mongo-db
-    ports:
-      - 3000:3000
-    environment:
-      MONGO_URL: "mongodb://mongo-db:27017"
-      PORT: 3000
-    expose:
-      - "3000"
-    networks:
-      test-network:
-        ipv4_address: 172.100.10.23
