@@ -111,8 +111,6 @@ services:
     networks:
       test-network:
         ipv4_address: 172.100.10.13
-<<<<<<< HEAD
-=======
   
 
      # - ./postgres/configdb/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -140,4 +138,3 @@ services:
     networks:
       test-network:
         ipv4_address: 172.100.10.21
->>>>>>> 3c63516 (Adicionado TimescaleDB)
