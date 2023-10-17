@@ -1,6 +1,6 @@
 package data
 
-type Data struct {
+type MessageData struct {
 	Date        string `json:"date"`
 	Agent_ID    string `json:"agent_id"`
 	Name        string `json:"name"`
