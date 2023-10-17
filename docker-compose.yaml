@@ -104,39 +104,17 @@ services:
     networks:
       test-network:
         ipv4_address: 172.100.10.12
-  debezium-jdbc-sink-connector:
-    image: debezium/connect
+  ingestor:
+    build:
+      context: ./go-ingestor
+      dockerfile: Dockerfile
     restart: always
-    hostname: debezium-jdbc-sink-connector
-    container_name: debezium-jdbc-sink-connector
-    ports:
-      - "8083:8083"
-    environment:
-      GROUP_ID: debezium-jdbc-sink-connector
-      BOOTSTRAP_SERVERS: 172.100.10.11:9092
-      CONFIG_STORAGE_TOPIC: my_connect_configs
-      OFFSET_STORAGE_TOPIC: my_connect_offsets
-      STATUS_STORAGE_TOPIC: my_connect_statuses
-      CONFIG_STORAGE_REPLICATION_FACTOR: 1
-      OFFSET_STORAGE_REPLICATION_FACTOR: 1
-      STATUS_STORAGE_REPLICATION_FACTOR: 1
-    volumes:
-      - ./kafka-connect/jdbc-sink-connector.json:/conf/jdbc-sink-connector.json
+    hostname: ingestor
+    container_name: ingestor
     depends_on:
       - zookeeper
       - kafka
       - postgres
-    command:
-      - bash
-      - -c
-      - |
-        echo "Wainting for kafka connect to start..."
-        until [[ "$$(curl -s -o /dev/null -w %{http_code} 172.100.10.13:8083/connectors)" -eq 200 ]]; do
-          echo "test"
-          sleep 1
-        done
-        echo -e "Sending connector"
-        curl -i -X POST -H "Accept:application/json" -H "Content-Type:application/json" 172.100.10.13:8083/connectors/ -d @/conf/jdbc-sink-connector.json
     networks:
       test-network:
         ipv4_address: 172.100.10.13

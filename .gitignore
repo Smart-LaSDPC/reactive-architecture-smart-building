@@ -2,6 +2,7 @@
 *.index
 *.timeindex
 *.db
+*.sum
 
 kafka/
 zookeeper/data/

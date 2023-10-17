@@ -3,7 +3,7 @@
     "config": {
         "connector.class": "io.debezium.connector.jdbc.JdbcSinkConnector",  
         "tasks.max": "1",  
-        "connection.url": "jdbc:postgresql://172.100.10.20/db",  
+        "connection.url": "jdbc:postgresql://172.100.10.20/tcc_icmc",  
         "connection.username": "admin",  
         "connection.password": "admin",  
         "insert.mode": "upsert",  
