@@ -22,9 +22,9 @@ func main() {
 	appConfig, err := config.GetAppConfig()
 	if err != nil {
 		log.Panicf("Failed to read app configuration: %s", err)
-	} 
+	}
 
-	saramaConfig, err := kafka.GenerateSaramaConfig(appConfig)
+	saramaConfig, err := kafka.GetSaramaConfig(appConfig)
 	if err != nil {
 		log.Panicf("Failed to generate Sarama library configuration: %s", err)
 	} 
