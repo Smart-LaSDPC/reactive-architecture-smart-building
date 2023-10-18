@@ -111,7 +111,10 @@ services:
     networks:
       test-network:
         ipv4_address: 172.100.10.13
+<<<<<<< HEAD
   
+=======
+>>>>>>> 430e191 (Git Issue)
 
      # - ./postgres/configdb/init.sql:/docker-entrypoint-initdb.d/init.sql
      # - ./postgres/db/:/var/lib/postgresql/data/
