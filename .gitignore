@@ -10,6 +10,7 @@ zookeeper/datalog/
 
 mongo-db/db
 postgres/db
+timescaledb/data
 
 kafka-connect/jars/postegresql-source-connector
 kafka-connect/jars/jdbc-sink-connector
