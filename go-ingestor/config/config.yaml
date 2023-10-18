@@ -2,7 +2,7 @@ kafka:
   brokers: 172.100.10.11:9092
   version: "2.1.0"
   ConsumerGroupID: my-group
-  topics: realtime-data
+  topic: realtime-data
   assignorStrategy: sticky
   offsetOldest: true
   verbose: false

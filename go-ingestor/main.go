@@ -13,6 +13,7 @@ import (
 	"github.com/IBM/sarama"
 	"go-ingestor/config"
 	"go-ingestor/kafka"
+	"go-ingestor/data"
 )
 
 // como lidar com multiplas replicas e particoes
@@ -49,7 +50,7 @@ func main() {
 			// `Consume` should be called inside an infinite loop, when a
 			// server-side rebalance happens, the consumer session will need to be
 			// recreated to get the new claims
-			if err := client.Consume(ctx, strings.Split(appConfig.Kafka.Topics, ","), &consumer); err != nil {
+			if err := client.Consume(ctx, []string{appConfig.Kafka.Topic}, &consumer); err != nil {
 				if errors.Is(err, sarama.ErrClosedConsumerGroup) {
 					return
 				}
@@ -63,7 +64,26 @@ func main() {
 	}()
 	
 	<-consumer.Ready
-	log.Println("Sarama consumer up and running!...")
+	log.Printf("Consumer running for messages on %s topic", appConfig.Kafka.Topic)
+
+	wg.Add(1)
+	go func(ctx context.Context, cancel context.CancelFunc) {
+		defer wg.Done()
+
+		select {
+		case msgBytes, ok := <-consumer.Received:
+			if !ok {
+				return
+			}
+			msg, err := data.ParseMessageData(msgBytes)
+			if err != nil {
+				log.Printf("Failed reading message: %s", err)
+			}
+			log.Printf("%+v", msg)
+		case <-ctx.Done():
+			return 
+		}
+	}(ctx, cancel)
 
 	sigusr1 := make(chan os.Signal, 1)
 	signal.Notify(sigusr1, syscall.SIGUSR1)

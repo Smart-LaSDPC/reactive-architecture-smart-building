@@ -15,7 +15,7 @@ type AppConfig struct {
 		Brokers 	     string `yaml:"brokers"`
 		Version		     string `yaml:"version"`
 		ConsumerGroupID  string `yaml:"ConsumerGroupID"`
-		Topics           string `yaml:"topics"`
+		Topic            string `yaml:"topic"`
 		AssignorStrategy string `yaml:"assignorStrategy"`
 		OffsetOldest	 bool   `yaml:"offsetOldest"`
 		Verbose			 bool   `yaml:"verbose"`
