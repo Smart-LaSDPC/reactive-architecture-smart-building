@@ -6,7 +6,7 @@
 
 kafka/data/
 kafka/connect/
-kafka/libs/
+kafka/libs/ 
 
 
 zookeeper/data/

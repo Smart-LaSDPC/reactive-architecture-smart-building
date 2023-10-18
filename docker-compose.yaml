@@ -35,7 +35,7 @@ services:
       - mosquitto
     networks:
       test-network:
-        ipv4_address: 172.100.10.6   
+        ipv4_address: 172.100.10.6  
   zookeeper:
     image: zookeeper:3.4.9
     restart: unless-stopped
@@ -54,16 +54,15 @@ services:
       test-network:
         ipv4_address: 172.100.10.10
   kafka:
-    image: confluentinc/cp-kafka:7.5.1.arm64
+    image: confluentinc/cp-kafka:5.1.0
     hostname: kafka
     container_name: kafka
-    restart: always
     ports:
       - "9092:9092"
     environment:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
-      KAFKA_ZOOKEEPER_CONNECT: "172.100.10.10:2181"
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
       KAFKA_BROKER_ID: 1
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_CREATE_TOPICS: "realtime-data:1:1"
@@ -108,6 +107,7 @@ services:
     depends_on:
       - zookeeper
       - kafka
+      - postgres
     networks:
       test-network:
         ipv4_address: 172.100.10.13
