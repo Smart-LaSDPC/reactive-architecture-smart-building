@@ -111,10 +111,6 @@ services:
     networks:
       test-network:
         ipv4_address: 172.100.10.13
-
-     # - ./postgres/configdb/init.sql:/docker-entrypoint-initdb.d/init.sql
-     # - ./postgres/db/:/var/lib/postgresql/data/
-
   timescaledb:
     image: timescale/timescaledb-ha:pg14-latest
     restart: always
