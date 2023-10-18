@@ -12,6 +12,8 @@ kafka/libs/
 zookeeper/data/
 zookeeper/datalog/
 
+go-ingestor/bin
+
 mongo-db/db
 postgres/db
 timescaledb/data
