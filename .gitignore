@@ -4,7 +4,11 @@
 *.db
 *.sum
 
-kafka/
+kafka/data/
+kafka/connect/
+kafka/libs/
+
+
 zookeeper/data/
 zookeeper/datalog/
 
