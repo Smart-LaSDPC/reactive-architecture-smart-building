@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  mosquitto-publisher:
+    build:
+      context: ./mosquitto-publisher
+      dockerfile: Dockerfile
+    stdin_open: true
+    tty: true
+    command: |
+      python3 data-generator.py -h andromeda.lasdpc.icmc.usp.br -p 31883 -v -i 1 -n testclient1
