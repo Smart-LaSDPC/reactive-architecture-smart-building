@@ -107,21 +107,22 @@ services:
     depends_on:
       - zookeeper
       - kafka
-      - postgres
     networks:
       test-network:
         ipv4_address: 172.100.10.13
   timescaledb:
-    image: timescale/timescaledb-ha:pg14-latest
+    image: timescale/timescaledb-ha:pg15-latest
     restart: always
     ports:
       - "5432:5432"
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
+      PGDATA: var/lib/postgresql/data/pgdata
     volumes:
-      - ./timescaledb/config/020-init.sql:/docker-entrypoint-initdb.d/020-init.sql
-      - ./timescaledb/data:/home/postgres/pgdata/data
+      - ./timescaledb/config/020_init.sql:/docker-entrypoint-initdb.d/020_init.sql
+      - ./timescaledb/config/021_insert_data.sql:/docker-entrypoint-initdb.d/021_insert_data.sql
+      - ./timescaledb/data:/var/lib/postgresql/data
     networks:
       test-network:
         ipv4_address: 172.100.10.20
