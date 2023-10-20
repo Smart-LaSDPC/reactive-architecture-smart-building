@@ -22,11 +22,11 @@ import (
 )
 
 const (
-	host     = "172.100.10.20" // Endereço do banco de dados PostgreSQL
-	port     = 5432            // Porta padrão do PostgreSQL
-	user     = "admin"         // Seu nome de usuário do PostgreSQL
-	password = "admin"         // Sua senha do PostgreSQL
-	dbname   = "tcc_icmc"      // Nome do banco de dados
+	host     = "!" // Endereço do banco de dados PostgreSQL
+	port     = !            // Porta padrão do PostgreSQL
+	user     = "!"         // Seu nome de usuário do PostgreSQL
+	password = "!"         // Sua senha do PostgreSQL
+	dbname   = "!"      // Nome do banco de dados
 )
 
 // como lidar com multiplas replicas e particoes
