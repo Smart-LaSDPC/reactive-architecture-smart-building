@@ -2,18 +2,31 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"strings"
 	"sync"
 	"syscall"
-	"log"
+
+	"go-ingestor/config"
+	"go-ingestor/data"
+	"go-ingestor/kafka"
 
 	"github.com/IBM/sarama"
-	"go-ingestor/config"
-	"go-ingestor/kafka"
-	"go-ingestor/data"
+
+	_ "github.com/lib/pq"
+)
+
+const (
+	host     = "172.100.10.20" // Endereço do banco de dados PostgreSQL
+	port     = 5432            // Porta padrão do PostgreSQL
+	user     = "admin"         // Seu nome de usuário do PostgreSQL
+	password = "admin"         // Sua senha do PostgreSQL
+	dbname   = "tcc_icmc"      // Nome do banco de dados
 )
 
 // como lidar com multiplas replicas e particoes
@@ -28,10 +41,10 @@ func main() {
 	saramaConfig, err := kafka.GetSaramaConfig(appConfig)
 	if err != nil {
 		log.Panicf("Failed to generate Sarama library configuration: %s", err)
-	} 
+	}
 
 	consumer := kafka.Consumer{
-		Ready: make(chan bool),
+		Ready:    make(chan bool),
 		Received: make(chan []byte),
 	}
 
@@ -62,7 +75,7 @@ func main() {
 			consumer.Ready = make(chan bool)
 		}
 	}()
-	
+
 	<-consumer.Ready
 	log.Printf("Consumer running for messages on %s topic", appConfig.Kafka.Topic)
 
@@ -80,8 +93,9 @@ func main() {
 				log.Printf("Failed reading message: %s", err)
 			}
 			log.Printf("%+v", msg)
+			insertData(*msg)
 		case <-ctx.Done():
-			return 
+			return
 		}
 	}(ctx, cancel)
 
@@ -90,10 +104,10 @@ func main() {
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGINT, syscall.SIGTERM)
-	
+
 	pause := false
 	keepRunning := true
-	
+
 	for keepRunning {
 		select {
 		case <-ctx.Done():
@@ -115,7 +129,6 @@ func main() {
 	}
 }
 
-
 func toggleConsumptionFlow(client sarama.ConsumerGroup, isPaused *bool) {
 	if *isPaused {
 		client.ResumeAll()
@@ -126,4 +139,22 @@ func toggleConsumptionFlow(client sarama.ConsumerGroup, isPaused *bool) {
 	}
 
 	*isPaused = !*isPaused
+}
+
+func insertData(msg data.MessageData) {
+	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
+
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	_, err = db.Exec("INSERT INTO tbl_temperature_moisture (time, agent_id, state, temperature, moisture) VALUES ($1, $2, $3, $4, $5)", msg.Date, msg.Agent_ID, msg.State, msg.Temperature, msg.Moisture)
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		fmt.Println("Dados inseridos com sucesso no PostgreSQL.")
+	}
 }

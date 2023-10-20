@@ -4,6 +4,7 @@ go 1.21.3
 
 require (
 	github.com/IBM/sarama v1.41.2
+	github.com/lib/pq v1.10.9
 	gopkg.in/yaml.v2 v2.2.2
 )
 
