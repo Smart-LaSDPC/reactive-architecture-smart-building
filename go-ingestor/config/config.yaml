@@ -1,8 +1,14 @@
 kafka:
-  brokers: 172.100.10.11:9092
+  brokerAddress: 172.100.10.11:9092
   version: "2.1.0"
-  ConsumerGroupID: my-group
+  consumerGroupID: my-group
   topic: realtime-data
   assignorStrategy: sticky
   offsetOldest: true
   verbose: false
+db:
+  host: 
+  port: 
+  dbName: 
+  username: 
+  password: 

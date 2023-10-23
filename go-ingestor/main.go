@@ -2,31 +2,21 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"errors"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
-	"strings"
 	"sync"
 	"syscall"
 
 	"go-ingestor/config"
 	"go-ingestor/data"
 	"go-ingestor/kafka"
+	// "go-ingestor/repository"
 
 	"github.com/IBM/sarama"
 
 	_ "github.com/lib/pq"
-)
-
-const (
-	host     = "!" // Endereço do banco de dados PostgreSQL
-	port     = !            // Porta padrão do PostgreSQL
-	user     = "!"         // Seu nome de usuário do PostgreSQL
-	password = "!"         // Sua senha do PostgreSQL
-	dbname   = "!"      // Nome do banco de dados
 )
 
 // como lidar com multiplas replicas e particoes
@@ -42,119 +32,89 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed to generate Sarama library configuration: %s", err)
 	}
-
-	consumer := kafka.Consumer{
-		Ready:    make(chan bool),
-		Received: make(chan []byte),
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-
-	client, err := sarama.NewConsumerGroup(strings.Split(appConfig.Kafka.Brokers, ","), appConfig.Kafka.ConsumerGroupID, saramaConfig)
+	
+	kafkaClient, err := sarama.NewConsumerGroup([]string{appConfig.Kafka.BrokerAddress}, appConfig.Kafka.ConsumerGroupID, saramaConfig)
 	if err != nil {
 		log.Panicf("Error creating consumer group client: %v", err)
 	}
 
 	wg := &sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for {
-			// `Consume` should be called inside an infinite loop, when a
-			// server-side rebalance happens, the consumer session will need to be
-			// recreated to get the new claims
-			if err := client.Consume(ctx, []string{appConfig.Kafka.Topic}, &consumer); err != nil {
-				if errors.Is(err, sarama.ErrClosedConsumerGroup) {
-					return
-				}
-				log.Panicf("Error from consumer: %v", err)
-			}
-			if ctx.Err() != nil {
-				return
-			}
-			consumer.Ready = make(chan bool)
-		}
-	}()
-
-	<-consumer.Ready
-	log.Printf("Consumer running for messages on %s topic", appConfig.Kafka.Topic)
-
-	wg.Add(1)
-	go func(ctx context.Context, cancel context.CancelFunc) {
-		defer wg.Done()
-
-		select {
-		case msgBytes, ok := <-consumer.Received:
-			if !ok {
-				return
-			}
-			msg, err := data.ParseMessageData(msgBytes)
-			if err != nil {
-				log.Printf("Failed reading message: %s", err)
-			}
-			log.Printf("%+v", msg)
-			insertData(*msg)
-		case <-ctx.Done():
-			return
-		}
-	}(ctx, cancel)
-
-	sigusr1 := make(chan os.Signal, 1)
-	signal.Notify(sigusr1, syscall.SIGUSR1)
+	ctx, cancel := context.WithCancel(context.Background())
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGINT, syscall.SIGTERM)
 
-	pause := false
+	messages := consumeMessages(kafkaClient, appConfig.Kafka.Topic, ctx, wg)
+	
 	keepRunning := true
-
 	for keepRunning {
 		select {
+		case msg, ok := <-messages:
+			if !ok {
+				log.Println("Terminating: done receiving messages")
+				keepRunning = false
+				break
+			}
+			wg.Add(1)
+			go processAndInsert(appConfig, wg, msg)
 		case <-ctx.Done():
-			log.Println("terminating: context cancelled")
+			log.Println("Terminating: context cancelled")
 			keepRunning = false
 		case <-sigterm:
-			log.Println("terminating: via signal")
+			log.Println("Terminating: via signal")
 			keepRunning = false
-		case <-sigusr1:
-			toggleConsumptionFlow(client, &pause)
 		}
 	}
 
 	cancel()
 	wg.Wait()
 
-	if err = client.Close(); err != nil {
-		log.Panicf("Error closing client: %v", err)
+	if err = kafkaClient.Close(); err != nil {
+		log.Panicf("Error closing Sarama client: %v", err)
 	}
 }
 
-func toggleConsumptionFlow(client sarama.ConsumerGroup, isPaused *bool) {
-	if *isPaused {
-		client.ResumeAll()
-		log.Println("Resuming consumption")
-	} else {
-		client.PauseAll()
-		log.Println("Pausing consumption")
-	}
+func processAndInsert(appConfig *config.AppConfig, wg *sync.WaitGroup, msgBytes []byte) {
+	defer wg.Done()
 
-	*isPaused = !*isPaused
+	msg, err := data.ParseMessageData(msgBytes)
+	if err != nil {
+		log.Printf("Failed to parse message: %s", err)
+		return
+	}
+	log.Printf("Parsed Message: %+v", msg)
+
+	// err = repository.InsertMsg(appConfig, msg)
+	// if err != nil {
+	// 	log.Printf("Failed to write message to database: %+v: %s", msg, err)
+	// }
 }
 
-func insertData(msg data.MessageData) {
-	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname)
-
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		log.Fatal(err)
+func consumeMessages(client sarama.ConsumerGroup, topic string, ctx context.Context, wg *sync.WaitGroup) (chan []byte) {
+	consumer := &kafka.Consumer{
+		Ready:    make(chan bool),
+		Received: make(chan []byte),
 	}
-	defer db.Close()
-
-	_, err = db.Exec("INSERT INTO tbl_temperature_moisture (time, agent_id, state, temperature, moisture) VALUES ($1, $2, $3, $4, $5)", msg.Date, msg.Agent_ID, msg.State, msg.Temperature, msg.Moisture)
-	if err != nil {
-		log.Fatal(err)
-	} else {
-		fmt.Println("Dados inseridos com sucesso no PostgreSQL.")
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer close(consumer.Received)
+		for {
+			if err := client.Consume(ctx, []string{topic}, consumer); err != nil {
+				if errors.Is(err, sarama.ErrClosedConsumerGroup) {
+					return
+				}
+				log.Panicf("Error from consumer: %v", err)
+			}
+			if ctx.Err() != nil {
+				log.Printf("Done consuming messages")
+				return
+			}
+			consumer.Ready = make(chan bool)
+			log.Printf("Consumer running for messages on %s topic", topic)
+		}
+	}()
+	<-consumer.Ready
+	log.Printf("Started consuming messages from topic %s", topic)
+	return consumer.Received
 }

@@ -4,22 +4,27 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-
-	// "gopkg.in/validator.v2"
 	"gopkg.in/yaml.v2"
 )
 
 
 type AppConfig struct {
 	Kafka struct {
-		Brokers 	     string `yaml:"brokers"`
+		BrokerAddress 	 string `yaml:"brokerAddress"`
 		Version		     string `yaml:"version"`
-		ConsumerGroupID  string `yaml:"ConsumerGroupID"`
+		ConsumerGroupID  string `yaml:"consumerGroupID"`
 		Topic            string `yaml:"topic"`
 		AssignorStrategy string `yaml:"assignorStrategy"`
 		OffsetOldest	 bool   `yaml:"offsetOldest"`
 		Verbose			 bool   `yaml:"verbose"`
 	} `yaml:"kafka"`
+	DB struct {
+		Host     string `yaml:"host"`
+		Port     string `yaml:"port"`
+		User     string `yaml:"user"`
+		Password string `yaml:"password"`
+		DbName   string `yaml:"dbName"`
+	} `yaml:"db"`
 }
 
 func GetAppConfig() (*AppConfig, error) {
@@ -33,10 +38,6 @@ func GetAppConfig() (*AppConfig, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot read YAML file %s: %s", configFile, err)
 	}
-
-	// if err := validator.Validate(c); err != nil {
-	// 	return nil, fmt.Errorf("invalid configuration: %s", err)
-	// }
 
 	return c, nil
 }
