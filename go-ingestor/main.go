@@ -12,7 +12,7 @@ import (
 	"go-ingestor/config"
 	"go-ingestor/data"
 	"go-ingestor/kafka"
-	// "go-ingestor/repository"
+	"go-ingestor/repository"
 
 	"github.com/IBM/sarama"
 
@@ -84,10 +84,10 @@ func processAndInsert(appConfig *config.AppConfig, wg *sync.WaitGroup, msgBytes 
 	}
 	log.Printf("Parsed Message: %+v", msg)
 
-	// err = repository.InsertMsg(appConfig, msg)
-	// if err != nil {
-	// 	log.Printf("Failed to write message to database: %+v: %s", msg, err)
-	// }
+	err = repository.InsertMsg(appConfig, msg)
+	if err != nil {
+		log.Printf("Failed to write message to database: %+v: %s", msg, err)
+	}
 }
 
 func consumeMessages(client sarama.ConsumerGroup, topic string, ctx context.Context, wg *sync.WaitGroup) (chan []byte) {

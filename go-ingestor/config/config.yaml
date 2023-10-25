@@ -12,3 +12,5 @@ db:
   dbName: 
   username: 
   password: 
+  tableName: temperature_moisture
+  sslMode:

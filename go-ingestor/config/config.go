@@ -19,11 +19,13 @@ type AppConfig struct {
 		Verbose			 bool   `yaml:"verbose"`
 	} `yaml:"kafka"`
 	DB struct {
-		Host     string `yaml:"host"`
-		Port     string `yaml:"port"`
-		User     string `yaml:"user"`
-		Password string `yaml:"password"`
-		DbName   string `yaml:"dbName"`
+		Host      string `yaml:"host"`
+		Port      string `yaml:"port"`
+		User      string `yaml:"user"`
+		Password  string `yaml:"password"`
+		DbName    string `yaml:"dbName"`
+		TableName string `yaml:"tableName"`
+		SslMode   string `yaml:"sslMode"`
 	} `yaml:"db"`
 }
 
