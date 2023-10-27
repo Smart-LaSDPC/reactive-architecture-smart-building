@@ -7,10 +7,10 @@ kafka:
   offsetOldest: true
   verbose: false
 db:
-  host: 
-  port: 
-  dbName: 
-  username: 
-  password: 
-  tableName: temperature_moisture
-  sslMode:
+  host: 172.100.10.20
+  port: 5432
+  dbName: tcc_icmc
+  username: admin
+  password: admin
+  tableName: tbl_temperature_moisture
+  sslMode: require

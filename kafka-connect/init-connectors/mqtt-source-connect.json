@@ -1,0 +1,13 @@
+{
+    "name": "mqtt-source-connect",
+    "config": {
+        "connector.class": "io.confluent.connect.mqtt.MqttSourceConnector",
+        "tasks.max": 1,
+        "mqtt.server.uri": "tcp://172.100.10.5:1883",
+        "mqtt.topics": "farm_id/device_id/testclient1",
+        "kafka.topic": "realtime-data",
+        "value.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
+        "confluent.topic.bootstrap.servers": "172.100.10.11:9092",
+        "confluent.topic.replication.factor": 1
+    }
+}
