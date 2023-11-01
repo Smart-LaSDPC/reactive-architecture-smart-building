@@ -12,15 +12,12 @@ import (
 	"go-ingestor/config"
 	"go-ingestor/data"
 	"go-ingestor/kafka"
-	"go-ingestor/repository"
+	"go-ingestor/database"
 
 	"github.com/IBM/sarama"
 
 	_ "github.com/lib/pq"
 )
-
-// como lidar com multiplas replicas e particoes
-// salvar offset da ultima mensagem lida ao desconectar
 
 func main() {
 	appConfig, err := config.GetAppConfig()
@@ -36,6 +33,11 @@ func main() {
 	kafkaClient, err := sarama.NewConsumerGroup([]string{appConfig.Kafka.BrokerAddress}, appConfig.Kafka.ConsumerGroupID, saramaConfig)
 	if err != nil {
 		log.Panicf("Error creating consumer group client: %v", err)
+	}
+
+	repository, err := database.NewRepository(appConfig)
+	if err != nil {
+		log.Panicf("Failed create database client: %s", err)
 	}
 
 	wg := &sync.WaitGroup{}
@@ -56,7 +58,7 @@ func main() {
 				break
 			}
 			wg.Add(1)
-			go processAndInsert(appConfig, wg, msg)
+			go processAndInsert(repository, appConfig, wg, msg)
 		case <-ctx.Done():
 			log.Println("Terminating: context cancelled")
 			keepRunning = false
@@ -68,13 +70,14 @@ func main() {
 
 	cancel()
 	wg.Wait()
+	repository.Close()
 
 	if err = kafkaClient.Close(); err != nil {
 		log.Panicf("Error closing Sarama client: %v", err)
 	}
 }
 
-func processAndInsert(appConfig *config.AppConfig, wg *sync.WaitGroup, msgBytes []byte) {
+func processAndInsert(repository *database.Repository, appConfig *config.AppConfig, wg *sync.WaitGroup, msgBytes []byte) {
 	defer wg.Done()
 
 	msg, err := data.ParseMessageData(msgBytes)
@@ -82,7 +85,6 @@ func processAndInsert(appConfig *config.AppConfig, wg *sync.WaitGroup, msgBytes 
 		log.Printf("Failed to parse message: %s", err)
 		return
 	}
-	log.Printf("Parsed Message: %+v", msg)
 
 	err = repository.InsertMsg(appConfig, msg)
 	if err != nil {

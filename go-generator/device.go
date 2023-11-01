@@ -83,5 +83,4 @@ func (d *Device) PublishData(ctx context.Context, wg *sync.WaitGroup) {
 			time.Sleep(d.PublishTimeout)
 		}
 	}
-
 }
