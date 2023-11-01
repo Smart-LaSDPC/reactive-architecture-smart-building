@@ -65,7 +65,7 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
       KAFKA_BROKER_ID: 1
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_CREATE_TOPICS: "realtime-data:1:1"
+      KAFKA_CREATE_TOPICS: "realtime-data:1:1,cdc.tbl-temperature-moisture:1:1"
     volumes:
       - ./kafka/data:/var/lib/kafka/data
     depends_on:
@@ -129,11 +129,11 @@ services:
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
-
     volumes:
       - ./timescaledb/config/020_init.sql:/docker-entrypoint-initdb.d/020_init.sql
       - ./timescaledb/config/021_insert_data.sql:/docker-entrypoint-initdb.d/021_insert_data.sql
       - ./timescaledb/data:/var/lib/postgresql/data/
+    command: ["postgres", "-c", "wal_level=logical", "-c", "max_wal_senders=1", "-c", "max_replication_slots=1"]
     networks:
       test-network:
         ipv4_address: 172.100.10.20

@@ -1,16 +1,16 @@
 kafka:
-  brokerAddress: 172.100.10.11:9092
-  version: "2.1.0"
-  consumerGroupID: my-group
-  topic: realtime-data
-  assignorStrategy: sticky
-  offsetOldest: true
-  verbose: false
+    brokerAddress: 172.100.10.11:9092
+    version: "2.1.0"
+    consumerGroupID: my-group
+    topic: realtime-data
+    assignorStrategy: sticky
+    offsetOldest: true
+    verbose: false
 db:
-  host: 172.100.10.20
-  port: 5432
-  dbName: tcc_icmc
-  username: admin
-  password: admin
-  tableName: tbl_temperature_moisture
-  sslMode: require
+    host: 172.100.10.20
+    port: 5432
+    sslMode: disable
+    user: admin
+    password: admin
+    dbName: tcc_icmc
+    tableName: temperature_moisture

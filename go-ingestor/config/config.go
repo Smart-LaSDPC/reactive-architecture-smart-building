@@ -4,19 +4,19 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+
 	"gopkg.in/yaml.v2"
 )
 
-
 type AppConfig struct {
 	Kafka struct {
-		BrokerAddress 	 string `yaml:"brokerAddress"`
-		Version		     string `yaml:"version"`
+		BrokerAddress    string `yaml:"brokerAddress"`
+		Version          string `yaml:"version"`
 		ConsumerGroupID  string `yaml:"consumerGroupID"`
 		Topic            string `yaml:"topic"`
 		AssignorStrategy string `yaml:"assignorStrategy"`
-		OffsetOldest	 bool   `yaml:"offsetOldest"`
-		Verbose			 bool   `yaml:"verbose"`
+		OffsetOldest     bool   `yaml:"offsetOldest"`
+		Verbose          bool   `yaml:"verbose"`
 	} `yaml:"kafka"`
 	DB struct {
 		Host      string `yaml:"host"`
@@ -35,7 +35,7 @@ func GetAppConfig() (*AppConfig, error) {
 	c := &AppConfig{}
 
 	configFile := ReadEnvVariable("CONFIG_FILE", "config/config.yaml")
-	
+
 	c, err = c.setFromYamlFile(configFile)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read YAML file %s: %s", configFile, err)
@@ -43,7 +43,6 @@ func GetAppConfig() (*AppConfig, error) {
 
 	return c, nil
 }
-
 
 func (c *AppConfig) setFromYamlFile(filename string) (*AppConfig, error) {
 	buf, err := ioutil.ReadFile(filename)
