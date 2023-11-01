@@ -49,7 +49,6 @@ func main() {
 
 		wg.Add(1)
 		go device.PublishData(ctx, wg)
-		fmt.Printf("Device %s goroutine scheduled\n", deviceID)
 	}
 
 	keepRunning := true
