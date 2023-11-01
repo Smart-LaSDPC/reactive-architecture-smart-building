@@ -22,4 +22,4 @@ push-publisher:
 	@docker push $(DOCKER_REPO):$(PUBLISHER_TAG)
 
 publish-k8s:
-	@docker compose -f compose-publisher-k8s.yaml up
+	@docker compose -f compose-publisher-k8s.yaml up --build
