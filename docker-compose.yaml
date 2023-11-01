@@ -25,10 +25,16 @@ services:
     networks:
       test-network:
         ipv4_address: 172.100.10.5
-  mosquitto-publisher:
+  generator:
     build:
-      context: ./mosquitto-publisher
+      context: ./go-generator
       dockerfile: Dockerfile
+    environment:
+      GENERATOR_BROKER_ADDRESS: localhost:1883
+      GENERATOR_TOPIC: farm_id/device_id/testclient1
+      GENERATOR_NUM_DEVICES: "1"
+      GENERATOR_PUBLISH_TIMEOUT_MS: "1000"
+    restart: always
     stdin_open: true
     tty: true
     depends_on:
