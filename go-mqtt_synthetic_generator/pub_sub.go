@@ -43,8 +43,7 @@ func sub_generate(deviceID, broker, topic string, iterations int) {
 
 	for i := 0; i < iterations; i++ {
 		// { "date":"11/01/2023 20:08:08","agent_id":"AGENTX","temperature":22,"moisture":40,"state":"ON" }
-		//
-		date := time.Now().Format("01/02/20006 15:04:05")
+		date := time.Now().Format("01/02/2006 15:04:05")
 		agentId := "AGENT" + deviceID
 		temperature := rand.Intn(60)
 		moisture := rand.Intn(60)
