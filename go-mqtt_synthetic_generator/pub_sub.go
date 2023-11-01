@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -41,7 +42,15 @@ func sub_generate(deviceID, broker, topic string, iterations int) {
 	fmt.Printf("Subscribed to topic %s\n", topic)
 
 	for i := 0; i < iterations; i++ {
-		text := fmt.Sprintf("%d", i)
+		// { "date":"11/01/2023 20:08:08","agent_id":"AGENTX","temperature":22,"moisture":40,"state":"ON" }
+		//
+		date := time.Now().Format("01/02/20006 15:04:05")
+		agentId := "AGENT" + deviceID
+		temperature := rand.Intn(60)
+		moisture := rand.Intn(60)
+		state := "ON"
+
+		text := fmt.Sprintf(`{ "date":"%s","agent_id":"%s","temperature":%d,"moisture":%d,"state":"%s" }`, date, agentId, temperature, moisture, state)
 		token = client.Publish(topic, 0, false, text)
 		token.Wait()
 		time.Sleep(10 * time.Millisecond)

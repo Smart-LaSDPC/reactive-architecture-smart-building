@@ -134,7 +134,6 @@ services:
       - ./timescaledb/config/020_init.sql:/docker-entrypoint-initdb.d/020_init.sql
       - ./timescaledb/config/021_insert_data.sql:/docker-entrypoint-initdb.d/021_insert_data.sql
       - ./timescaledb/data:/var/lib/postgresql/data/
-    command: ["postgres", "-c", "wal_level=logical"]
     networks:
       test-network:
         ipv4_address: 172.100.10.20

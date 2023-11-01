@@ -9,11 +9,11 @@ import (
 func main() {
 	// https://github.com/eclipse/paho.mqtt.golang
 	//var broker = "tcp://test.mosquitto.org:1883"
-	const broker = "andromeda.lasdpc.icmc.usp.br:31883"
-	const topic = "topic/secret"
-	const numDevices = 5000
-	const deviceNumEvents = 100000
-
+	// "andromeda.lasdpc.icmc.usp.br:31883"
+	const broker = "localhost:1883"
+	const topic = "farm_id/device_id/testclient1"
+	const numDevices = 40
+	const deviceNumEvents = 200
 	// simulates device subscription
 	var wg sync.WaitGroup
 
