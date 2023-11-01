@@ -7,6 +7,6 @@ services:
     environment:
       GENERATOR_BROKER_ADDRESS: andromeda.lasdpc.icmc.usp.br:31883
       GENERATOR_TOPIC: farm_id/device_id/testclient1
-      GENERATOR_NUM_DEVICES: "5000"
+      GENERATOR_NUM_DEVICES: "10"
       GENERATOR_PUBLISH_TIMEOUT_MS: "1000"
     restart: always
