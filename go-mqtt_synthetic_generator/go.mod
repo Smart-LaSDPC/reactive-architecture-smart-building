@@ -1,4 +1,4 @@
-module awesomeProject
+module go-mqtt_synthetic_generator
 
 go 1.21
 
