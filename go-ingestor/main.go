@@ -70,9 +70,11 @@ func main() {
 		metricInsertedFailed,
 	)
 
-	http.Handle("/metrics", promhttp.Handler())
-	http.ListenAndServe(":8080", nil)
-	log.Printf("Started metrics server at :8080/metrics\n")
+	go func(){
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":8080", nil)
+		log.Printf("Started metrics server at :8080/metrics\n")
+	}()
 
 	// Fluxo de execucao
 	wg := &sync.WaitGroup{}
