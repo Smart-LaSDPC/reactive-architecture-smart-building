@@ -36,8 +36,7 @@ func (r *Repository) InsertMsg(appConfig *config.AppConfig, msg *data.MessageDat
 	if err != nil {
 		return fmt.Errorf("failed to insert data: %s", err)
 	}
-
-	log.Printf("Inserted into database succesfully: %+v", msg)
+	
 	return nil
 }
 

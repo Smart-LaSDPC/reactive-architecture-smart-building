@@ -3,11 +3,14 @@ package kafka
 import (
 	"log"
 	"github.com/IBM/sarama"
+	"github.com/prometheus/client_golang/prometheus"
+
 )
 
 type Consumer struct {
 	Ready chan bool
 	Received chan []byte
+	ReceivedCounter prometheus.Counter
 }
 
 func (consumer *Consumer) Setup(sarama.ConsumerGroupSession) error {
@@ -28,6 +31,7 @@ func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 				return nil
 			}
 			session.MarkMessage(message, "")
+			consumer.ReceivedCounter.Inc()
 			consumer.Received <- message.Value
 		case <-session.Context().Done():
 			return nil

@@ -66,9 +66,10 @@ func main() {
 		go device.PublishData(ctx, start, wg)
 	}
 
-	// Signal to start publishing
+	// Sinal para comecar a publicar mensagens
 	close(start)
 
+	// Gorotina para terminar a execucao quando o tempo terminar
 	if !continuous {
 		go func(){
 			time.Sleep(time.Duration(duration) * time.Second)
