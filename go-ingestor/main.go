@@ -70,9 +70,11 @@ func main() {
 		metricInsertedFailed,
 	)
 
-	http.Handle("/metrics", promhttp.Handler())
-	http.ListenAndServe(":8080", nil)
-	log.Printf("Started metrics server at :8080/metrics\n")
+	go func(){
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":8080", nil)
+		log.Printf("Started metrics server at :8080/metrics\n")
+	}()
 
 	// Fluxo de execucao
 	wg := &sync.WaitGroup{}
@@ -123,7 +125,7 @@ func processAndInsert(repository *database.Repository, appConfig *config.AppConf
 	log.Printf("Parsed message: %+v\n", msg)
 
 	processedCounter.Inc()
-	
+
 	err = repository.InsertMsg(appConfig, msg)
 	if err != nil {
 		log.Printf("Failed to write message to database: %+v: %s", msg, err)
