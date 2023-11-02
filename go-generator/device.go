@@ -52,7 +52,7 @@ func NewDevice(deviceID string, topic string, publishTimeout time.Duration, mqtt
 		Topic: topic,
 		PublishTimeout: publishTimeout,
 		mqttClient: client,
-	}, nil
+	}, nil	
 }
 
 func (d *Device) generateMsgPayload() string {
@@ -65,12 +65,14 @@ func (d *Device) generateMsgPayload() string {
 	return fmt.Sprintf(`{ "date":"%s","agent_id":"%s","temperature":%d,"moisture":%d,"state":"%s" }`, date, agentId, temperature, moisture, state)
 }
 
-func (d *Device) PublishData(ctx context.Context, wg *sync.WaitGroup) {
+func (d *Device) PublishData(ctx context.Context, start <-chan interface{}, wg *sync.WaitGroup) {
 	defer wg.Done()
 	defer d.mqttClient.Disconnect(100)
 
+	// Block until start signal
+	<-start
+	
 	fmt.Printf("Started publishing messages for device %s\n", d.DeviceID)
-
 	for {
 		select{
 		case <-ctx.Done():
