@@ -46,7 +46,7 @@ func main() {
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGINT, syscall.SIGTERM)
 
-	messages := consumeMessages(kafkaClient, appConfig.Kafka.Topic, ctx, wg)
+	messages := consumeMessages(kafkaClient, appConfig, ctx, wg)
 	
 	keepRunning := true
 	for keepRunning {
@@ -92,17 +92,18 @@ func processAndInsert(repository *database.Repository, appConfig *config.AppConf
 	}
 }
 
-func consumeMessages(client sarama.ConsumerGroup, topic string, ctx context.Context, wg *sync.WaitGroup) (chan []byte) {
+func consumeMessages(client sarama.ConsumerGroup, appConfig *config.AppConfig, ctx context.Context, wg *sync.WaitGroup) (chan []byte) {
 	consumer := &kafka.Consumer{
 		Ready:    make(chan bool),
 		Received: make(chan []byte),
 	}
+
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		defer close(consumer.Received)
 		for {
-			if err := client.Consume(ctx, []string{topic}, consumer); err != nil {
+			if err := client.Consume(ctx, []string{appConfig.Kafka.Topic}, consumer); err != nil {
 				if errors.Is(err, sarama.ErrClosedConsumerGroup) {
 					return
 				}
@@ -113,10 +114,10 @@ func consumeMessages(client sarama.ConsumerGroup, topic string, ctx context.Cont
 				return
 			}
 			consumer.Ready = make(chan bool)
-			log.Printf("Consumer running for messages on %s topic", topic)
+			log.Printf("Consumer running for messages on %s topic", appConfig.Kafka.Topic)
 		}
 	}()
 	<-consumer.Ready
-	log.Printf("Started consuming messages from topic %s", topic)
+	log.Printf("Started consuming messages from %s at topic %s", appConfig.Kafka.BrokerAddress, appConfig.Kafka.Topic)
 	return consumer.Received
 }
