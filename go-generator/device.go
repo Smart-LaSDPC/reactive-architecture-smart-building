@@ -1,11 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
-	"time"
-	"context"
 	"sync"
+	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
@@ -23,15 +23,15 @@ var connectionLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, 
 }
 
 type Device struct {
-	DeviceID string
-	Topic string
+	DeviceID       string
+	Topic          string
 	PublishTimeout time.Duration
-	mqttClient mqtt.Client
+	mqttClient     mqtt.Client
 }
 
 func NewDevice(deviceID string, topic string, publishTimeout time.Duration, mqttOptions *mqtt.ClientOptions) (*Device, error) {
 	clientID := fmt.Sprintf("%s DeviceID: %s", time.Now().String(), deviceID)
-		
+
 	mqttOptions.SetClientID(clientID)
 	mqttOptions.SetDefaultPublishHandler(messagePubHandler)
 	mqttOptions.OnConnect = connectHandler
@@ -48,11 +48,11 @@ func NewDevice(deviceID string, topic string, publishTimeout time.Duration, mqtt
 	// fmt.Printf("Subscribed to topic %s\n", topic)
 
 	return &Device{
-		DeviceID: deviceID,
-		Topic: topic,
+		DeviceID:       deviceID,
+		Topic:          topic,
 		PublishTimeout: publishTimeout,
-		mqttClient: client,
-	}, nil	
+		mqttClient:     client,
+	}, nil
 }
 
 func (d *Device) generateMsgPayload() string {
@@ -65,24 +65,26 @@ func (d *Device) generateMsgPayload() string {
 	return fmt.Sprintf(`{ "date":"%s","agent_id":"%s","temperature":%d,"moisture":%d,"state":"%s" }`, date, agentId, temperature, moisture, state)
 }
 
-func (d *Device) PublishData(ctx context.Context, start <-chan interface{}, wg *sync.WaitGroup) {
+func (d *Device) PublishData(ctx context.Context, start <-chan interface{}, wg *sync.WaitGroup, messagesGenerated, totalMsgs *int) {
 	defer wg.Done()
 	defer d.mqttClient.Disconnect(100)
 
-	// Block until start signal
+	// Bloqueando ate o sinal de inicio
 	<-start
-	
-	fmt.Printf("Started publishing messages for device %s\n", d.DeviceID)
+
 	for {
-		select{
+		select {
 		case <-ctx.Done():
 			fmt.Printf("Done publishing messages for device %s\n", d.DeviceID)
 			return
 		default:
-			payload := d.generateMsgPayload()
-			token := d.mqttClient.Publish(d.Topic, 0, false, payload)
-			token.Wait()
-			time.Sleep(d.PublishTimeout)
+			if *messagesGenerated < *totalMsgs {
+				*messagesGenerated += 1
+				payload := d.generateMsgPayload()
+				token := d.mqttClient.Publish(d.Topic, 0, false, payload)
+				token.Wait()
+				time.Sleep(d.PublishTimeout)
+			}
 		}
 	}
 }

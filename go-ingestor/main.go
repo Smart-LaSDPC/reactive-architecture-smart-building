@@ -4,22 +4,30 @@ import (
 	"context"
 	"errors"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
-	"net/http"
-	
+
 	"github.com/IBM/sarama"
 	_ "github.com/lib/pq"
-	
+
+	"net/http"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	"github.com/IBM/sarama"
+	_ "github.com/lib/pq"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"go-ingestor/config"
 	"go-ingestor/data"
-	"go-ingestor/kafka"
 	"go-ingestor/database"
+	"go-ingestor/kafka"
 )
 
 func main() {
@@ -33,7 +41,7 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed to generate Sarama library configuration: %s", err)
 	}
-	
+
 	// Clientes
 	kafkaClient, err := sarama.NewConsumerGroup([]string{appConfig.Kafka.BrokerAddress}, appConfig.Kafka.ConsumerGroupID, saramaConfig)
 	if err != nil {
@@ -47,20 +55,20 @@ func main() {
 
 	// Metricas
 	metricMessagesReceived := prometheus.NewCounter(prometheus.CounterOpts{
-		Name:        "ingestor_messages_received",
-		Help:        "Messages consumed from Kafka topic by Ingestor",
+		Name: "ingestor_messages_received",
+		Help: "Messages consumed from Kafka topic by Ingestor",
 	})
 	metricMessagesProcessed := prometheus.NewCounter(prometheus.CounterOpts{
-		Name:        "ingestor_messages_processed",
-		Help:        "Messages received and proccessed by Ingestor",
+		Name: "ingestor_messages_processed",
+		Help: "Messages received and proccessed by Ingestor",
 	})
 	metricInsertedSuccess := prometheus.NewCounter(prometheus.CounterOpts{
-		Name:        "ingestor_messages_inserted_success",
-		Help:        "Messages succesfully inserted into database by Ingestor",
+		Name: "ingestor_messages_inserted_success",
+		Help: "Messages succesfully inserted into database by Ingestor",
 	})
 	metricInsertedFailed := prometheus.NewCounter(prometheus.CounterOpts{
-		Name:        "ingestor_messages_inserted_fail",
-		Help:        "Messages failed to be inserted into database by Ingestor",
+		Name: "ingestor_messages_inserted_fail",
+		Help: "Messages failed to be inserted into database by Ingestor",
 	})
 
 	prometheus.MustRegister(
@@ -82,7 +90,7 @@ func main() {
 	signal.Notify(sigterm, syscall.SIGINT, syscall.SIGTERM)
 
 	messages := consumeMessages(kafkaClient, appConfig, ctx, wg, metricMessagesReceived)
-	
+
 	keepRunning := true
 	for keepRunning {
 		select {
@@ -123,7 +131,7 @@ func processAndInsert(repository *database.Repository, appConfig *config.AppConf
 	log.Printf("Parsed message: %+v\n", msg)
 
 	processedCounter.Inc()
-	
+
 	err = repository.InsertMsg(appConfig, msg)
 	if err != nil {
 		log.Printf("Failed to write message to database: %+v: %s", msg, err)
@@ -133,10 +141,10 @@ func processAndInsert(repository *database.Repository, appConfig *config.AppConf
 	insertionSuccessCounter.Inc()
 }
 
-func consumeMessages(client sarama.ConsumerGroup, appConfig *config.AppConfig, ctx context.Context, wg *sync.WaitGroup, receivedCounter prometheus.Counter) (chan []byte) {
+func consumeMessages(client sarama.ConsumerGroup, appConfig *config.AppConfig, ctx context.Context, wg *sync.WaitGroup, receivedCounter prometheus.Counter) chan []byte {
 	consumer := &kafka.Consumer{
-		Ready:    make(chan bool),
-		Received: make(chan []byte),
+		Ready:           make(chan bool),
+		Received:        make(chan []byte),
 		ReceivedCounter: receivedCounter,
 	}
 
