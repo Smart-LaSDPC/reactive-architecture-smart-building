@@ -15,7 +15,6 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 }
 
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
-	fmt.Println("Connected")
 }
 
 var connectionLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
@@ -65,25 +64,26 @@ func (d *Device) generateMsgPayload() string {
 	return fmt.Sprintf(`{ "date":"%s","agent_id":"%s","temperature":%d,"moisture":%d,"state":"%s" }`, date, agentId, temperature, moisture, state)
 }
 
-func (d *Device) PublishData(ctx context.Context, start <-chan interface{}, wg *sync.WaitGroup, messagesGenerated *int) {
+func (d *Device) PublishData(ctx context.Context, start <-chan interface{}, wg *sync.WaitGroup, messagesGenerated, totalMsgs *int) {
 	defer wg.Done()
 	defer d.mqttClient.Disconnect(100)
 
-	// Block until start signal
+	// Bloqueando ate o sinal de inicio
 	<-start
 	
-	fmt.Printf("Started publishing messages for device %s\n", d.DeviceID)
 	for {
 		select{
 		case <-ctx.Done():
 			fmt.Printf("Done publishing messages for device %s\n", d.DeviceID)
 			return
 		default:
-			payload := d.generateMsgPayload()
-			token := d.mqttClient.Publish(d.Topic, 0, false, payload)
-			token.Wait()
-			*messagesGenerated += 1
-			time.Sleep(d.PublishTimeout)
+			if *messagesGenerated < *totalMsgs {
+				*messagesGenerated += 1
+				payload := d.generateMsgPayload()
+				token := d.mqttClient.Publish(d.Topic, 0, false, payload)
+				token.Wait()
+				time.Sleep(d.PublishTimeout)
+			}
 		}
 	}
 }
