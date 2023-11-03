@@ -65,7 +65,7 @@ func (d *Device) generateMsgPayload() string {
 	return fmt.Sprintf(`{ "date":"%s","agent_id":"%s","temperature":%d,"moisture":%d,"state":"%s" }`, date, agentId, temperature, moisture, state)
 }
 
-func (d *Device) PublishData(ctx context.Context, start <-chan interface{}, wg *sync.WaitGroup) {
+func (d *Device) PublishData(ctx context.Context, start <-chan interface{}, wg *sync.WaitGroup, messagesGenerated *int) {
 	defer wg.Done()
 	defer d.mqttClient.Disconnect(100)
 
@@ -82,6 +82,7 @@ func (d *Device) PublishData(ctx context.Context, start <-chan interface{}, wg *
 			payload := d.generateMsgPayload()
 			token := d.mqttClient.Publish(d.Topic, 0, false, payload)
 			token.Wait()
+			*messagesGenerated += 1
 			time.Sleep(d.PublishTimeout)
 		}
 	}

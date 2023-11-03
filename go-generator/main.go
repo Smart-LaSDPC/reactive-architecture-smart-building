@@ -49,6 +49,8 @@ func main() {
 	start := make(chan interface{})
 	end := make(chan interface{})
 
+	messagesGenerated := 0
+
 	for i := 0; i < numDevices; i++ {
 		deviceID := fmt.Sprintf("%d", i)
 		mqttOptions := mqtt.NewClientOptions()
@@ -63,7 +65,7 @@ func main() {
 		fmt.Printf("Succesfully connected Device %s\n", deviceID)
 
 		wg.Add(1)
-		go device.PublishData(ctx, start, wg)
+		go device.PublishData(ctx, start, wg, &messagesGenerated)
 	}
 
 	// Sinal para comecar a publicar mensagens
@@ -92,6 +94,7 @@ func main() {
 	wg.Wait()
 
 	fmt.Println("### End of MQTT synthetic generation")
+	fmt.Printf("### Generated %d messages\n", messagesGenerated)
 }
 
 func ReadEnvVariable(env, fallback string) string {
