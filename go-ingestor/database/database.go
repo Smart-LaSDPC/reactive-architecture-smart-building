@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"context"
 	"log"
 
 	"go-ingestor/config"
@@ -17,7 +18,7 @@ type Repository struct {
 }
 
 func NewRepository(appConfig *config.AppConfig) (*Repository, error) {
-	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s binary_parameters=yes",
+	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		appConfig.DB.Host, appConfig.DB.Port, appConfig.DB.User, appConfig.DB.Password, appConfig.DB.DbName, appConfig.DB.SslMode)
 
 	clientPool := pg.NewPostgresConnectionPool(connStr)
@@ -43,10 +44,12 @@ func NewRepositoryOld(appConfig *config.AppConfig) (*Repository, error) {
 	}, nil
 }
 
-func (r *Repository) InsertMsg(appConfig *config.AppConfig, msg *data.MessageData) error {
-	insertQuery := fmt.Sprintf("INSERT INTO %s (time, agent_id, state, temperature, moisture) VALUES ($1, $2, $3, $4, $5)", appConfig.DB.TableName)
-
-	_, err := r.client.Exec(insertQuery, msg.Date, msg.Agent_ID, msg.State, msg.Temperature, msg.Moisture)
+func (r *Repository) InsertMsg(ctx context.Context, appConfig *config.AppConfig, msg *data.MessageData) error {
+	// insertQuery := fmt.Sprintf("INSERT INTO %s (time, agent_id, state, temperature, moisture) VALUES ($1, $2, $3, $4, $5)", appConfig.DB.TableName, )
+	// _, err := r.client.Exec(insertQuery, msg.Date, msg.Agent_ID, msg.State, msg.Temperature, msg.Moisture)
+	
+	insertQuery := fmt.Sprintf("INSERT INTO %s (time, agent_id, state, temperature, moisture) VALUES (%s, %s, %s, %d, %d);", appConfig.DB.TableName, msg.Date, msg.Agent_ID, msg.State, msg.Temperature, msg.Moisture)
+	_, err := r.clientPool.Exec(ctx, insertQuery, msg.Date, msg.Agent_ID, msg.State, msg.Temperature, msg.Moisture)
 	if err != nil {
 		return fmt.Errorf("failed to insert data: %s", err)
 	}

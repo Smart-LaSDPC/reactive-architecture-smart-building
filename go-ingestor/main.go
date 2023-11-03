@@ -95,7 +95,7 @@ func main() {
 				break
 			}
 			wg.Add(1)
-			go processAndInsert(repository, appConfig, wg, msg, metricMessagesProcessed, metricInsertedSuccess, metricInsertedFailed)
+			go processAndInsert(ctx, wg, repository, appConfig, msg, metricMessagesProcessed, metricInsertedSuccess, metricInsertedFailed)
 		case <-ctx.Done():
 			log.Println("Terminating: context cancelled")
 			keepRunning = false
@@ -114,7 +114,7 @@ func main() {
 	}
 }
 
-func processAndInsert(repository *database.Repository, appConfig *config.AppConfig, wg *sync.WaitGroup, msgBytes []byte, processedCounter, insertionSuccessCounter, insertionFailCounter prometheus.Counter) {
+func processAndInsert(ctx context.Context, wg *sync.WaitGroup, repository *database.Repository, appConfig *config.AppConfig, msgBytes []byte, processedCounter, insertionSuccessCounter, insertionFailCounter prometheus.Counter) {
 	defer wg.Done()
 
 	msg, err := data.ParseMessageData(msgBytes)
@@ -126,7 +126,7 @@ func processAndInsert(repository *database.Repository, appConfig *config.AppConf
 
 	processedCounter.Inc()
 
-	err = repository.InsertMsg(appConfig, msg)
+	err = repository.InsertMsg(ctx, appConfig, msg)
 	if err != nil {
 		log.Printf("Failed to write message to database: %+v: %s", msg, err)
 		insertionFailCounter.Inc()
