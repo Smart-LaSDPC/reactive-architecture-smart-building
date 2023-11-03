@@ -13,14 +13,6 @@ import (
 	"github.com/IBM/sarama"
 	_ "github.com/lib/pq"
 
-	"net/http"
-
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-
-	"github.com/IBM/sarama"
-	_ "github.com/lib/pq"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
