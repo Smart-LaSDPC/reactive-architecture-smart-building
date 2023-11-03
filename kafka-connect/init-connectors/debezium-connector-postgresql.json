@@ -2,16 +2,16 @@
     "name": "debezium-connector-postgresql",
     "config": {
       "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+      "plugin.name": "decoderbufs",
       "tasks.max": "1",
       "database.hostname": "172.100.10.20",
       "database.port": "5432",
       "database.user": "admin",
       "database.password": "admin",
       "database.dbname": "tcc_icmc",
-      "database.server.name": "timescaledb",
+      "database.server.name": "postgres",
       "database.whitelist": "tcc_icmc",
-      "database.history.kafka.bootstrap.servers": "172.100.10.11:9092",
-      "database.history.kafka.topic": "cdc.tbl-temperature-moisture",
+      "table.include.list": "public.temperature_moisture",
       "topic.prefix": "cdc"
     }
   }

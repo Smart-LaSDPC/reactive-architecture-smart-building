@@ -1,4 +1,4 @@
-module go-mqtt_synthetic_generator
+module go-generator
 
 go 1.21
 

@@ -29,24 +29,24 @@ CREATE TABLE status_sensor
 );
 
 
-CREATE OR REPLACE FUNCTION update_status_sensor()
-RETURNS TRIGGER AS $$
-BEGIN
-    INSERT INTO status_sensor (agent_id, temperature, state)
-    VALUES (NEW.agent_id, NEW.temperature, NEW.state)
-    ON CONFLICT (agent_id)
-    DO UPDATE
-    SET temperature = EXCLUDED.temperature,
-        state = EXCLUDED.state;
+--CREATE OR REPLACE FUNCTION update_status_sensor()
+--RETURNS TRIGGER AS $$
+--BEGIN
+--    INSERT INTO status_sensor (agent_id, temperature, state)
+--    VALUES (NEW.agent_id, NEW.temperature, NEW.state)
+--    ON CONFLICT (agent_id)
+--    DO UPDATE
+--    SET temperature = EXCLUDED.temperature,
+--        state = EXCLUDED.state;
 
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+--    RETURN NEW;
+--END;
+--$$ LANGUAGE plpgsql;
 
-CREATE TRIGGER update_status_trigger
-AFTER INSERT ON temperature_moisture
-FOR EACH ROW
-EXECUTE FUNCTION update_status_sensor();
+--CREATE TRIGGER update_status_trigger
+--AFTER INSERT ON temperature_moisture
+--FOR EACH ROW
+--EXECUTE FUNCTION update_status_sensor();
 
 
 
