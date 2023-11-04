@@ -61,7 +61,6 @@ func (d *Device) PublishData(ctx context.Context, start <-chan interface{}, wg *
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Printf("Done publishing messages for device %s\n", d.DeviceID)
 			return
 		default:
 			if *messagesGenerated < *totalMsgs {

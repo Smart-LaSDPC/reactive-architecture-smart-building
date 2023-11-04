@@ -63,7 +63,6 @@ func main() {
 			fmt.Printf("Failed to connect device %s: %s\n", deviceID, err)
 			continue
 		}
-		fmt.Printf("Succesfully connected Device %s\n", deviceID)
 
 		wg.Add(1)
 		go device.PublishData(ctx, start, wg, &messagesGenerated, &totalMsgs)
