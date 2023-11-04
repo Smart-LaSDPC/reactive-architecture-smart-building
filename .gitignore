@@ -15,7 +15,7 @@ zookeeper/datalog/
 go-ingestor/bin
 
 mongo-db/db
-postgres/db
+postgresql/data
 timescaledb/data
 
 kafka-connect/jars/postegresql-source-connector

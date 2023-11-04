@@ -30,9 +30,9 @@ services:
       context: ./go-generator
       dockerfile: Dockerfile
     environment:
-      GENERATOR_BROKER_ADDRESS: localhost:1883
+      GENERATOR_BROKER_ADDRESS: 172.100.10.5:1883
       GENERATOR_TOPIC: farm_id/device_id/testclient1
-      GENERATOR_NUM_DEVICES: "1"
+      GENERATOR_NUM_DEVICES: "5"
       GENERATOR_PUBLISH_TIMEOUT_MS: "1000"
     restart: always
     stdin_open: true
@@ -71,7 +71,7 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
       KAFKA_BROKER_ID: 1
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_CREATE_TOPICS: "realtime-data:1:1,cdc.tbl-temperature-moisture:1:1"
+      KAFKA_CREATE_TOPICS: "realtime-data:1:1"
     volumes:
       - ./kafka/data:/var/lib/kafka/data
     depends_on:
@@ -101,6 +101,8 @@ services:
       CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
       CONNECT_REST_ADVERTISED_HOST_NAME: localhost
       CONNECT_LOG4J_ROOT_LOGLEVEL: DEBUG
+      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
     #  CONNECT_PLUGIN_PATH: /usr/share/java,/etc/kafka-connect/jars 
     # volumes:
     #  - ./kafka-connect/jars/:/etc/kafka-connect/jars 
@@ -109,6 +111,17 @@ services:
     networks:
       test-network:
         ipv4_address: 172.100.10.12
+  schema-registry:
+    image: confluentinc/cp-schema-registry:latest
+    restart: always
+    environment:
+     SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: zookeeper:2181
+     SCHEMA_REGISTRY_HOST_NAME: schema-registry
+     SCHEMA_REGISTRY_LISTENERS: http://schema-registry:8081,http://localhost:8081
+    depends_on: [zookeeper, kafka]
+    networks:
+      test-network:
+        ipv4_address: 172.100.10.15
   ingestor:
     build:
       context: ./go-ingestor
@@ -127,19 +140,25 @@ services:
       test-network:
         ipv4_address: 172.100.10.13
 
-  timescaledb:
-    image: timescale/timescaledb-ha:pg15-latest
+  # timescaledb:
+  #   image: timescale/timescaledb-ha:pg15-latest
+  postgres:
+    image: debezium/postgres
     restart: always
+    healthcheck:
+      test: "pg_isready -U admin -d tcc_icmc"
+      interval: 1s
+      timeout: 20s
+      retries: 10
     ports:
       - "5432:5432"
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
     volumes:
-      - ./timescaledb/config/020_init.sql:/docker-entrypoint-initdb.d/020_init.sql
-      - ./timescaledb/config/021_insert_data.sql:/docker-entrypoint-initdb.d/021_insert_data.sql
-      - ./timescaledb/data:/var/lib/postgresql/data/
-    command: ["postgres", "-c", "wal_level=logical", "-c", "max_wal_senders=1", "-c", "max_replication_slots=1"]
+      - ./postgresql/sql/020_init.sql:/docker-entrypoint-initdb.d/020_init.sql
+      - ./postgresql/sql/021_insert_data.sql:/docker-entrypoint-initdb.d/021_insert_data.sql
+     # - ./postgresql/data:/var/lib/postgresql/data/
     networks:
       test-network:
         ipv4_address: 172.100.10.20

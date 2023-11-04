@@ -15,4 +15,8 @@ done
 echo -e "\n--\n+> Creating MQTT Source Connect"
 curl -s -X PUT -H  "Content-Type:application/json" http://localhost:8083/connectors/mqtt-source-connect/config \
     -d '@mqtt-source-connect.json'
+
+echo -e "\n--\n+> Creating Debezium Postgres Source Connect"
+curl -s -X PUT -H  "Content-Type:application/json" http://localhost:8083/connectors/debezium-connector-postgresql/config \
+    -d '@debezium-connector-postgresql.json'
 sleep infinity
