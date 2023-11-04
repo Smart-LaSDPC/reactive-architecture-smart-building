@@ -10,6 +10,8 @@ db:
     host: 172.100.10.20
     port: 5432
     sslMode: disable
+    minConns: 25
+    maxConns: 25
     user: admin
     password: admin
     dbName: tcc_icmc

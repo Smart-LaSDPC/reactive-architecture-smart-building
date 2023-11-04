@@ -50,10 +50,6 @@ func main() {
 		Name: "ingestor_messages_received",
 		Help: "Messages consumed from Kafka topic by Ingestor",
 	})
-	metricMessagesProcessed := prometheus.NewCounter(prometheus.CounterOpts{
-		Name: "ingestor_messages_processed",
-		Help: "Messages received and proccessed by Ingestor",
-	})
 	metricInsertedSuccess := prometheus.NewCounter(prometheus.CounterOpts{
 		Name: "ingestor_messages_inserted_success",
 		Help: "Messages succesfully inserted into database by Ingestor",
@@ -65,14 +61,15 @@ func main() {
 
 	prometheus.MustRegister(
 		metricMessagesReceived,
-		metricMessagesProcessed,
 		metricInsertedSuccess,
 		metricInsertedFailed,
 	)
 
-	http.Handle("/metrics", promhttp.Handler())
-	http.ListenAndServe(":8080", nil)
-	log.Printf("Started metrics server at :8080/metrics\n")
+	go func () {
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":8080", nil)
+		log.Printf("Started metrics server at :8080/metrics\n")
+	}()
 
 	// Fluxo de execucao
 	wg := &sync.WaitGroup{}
@@ -93,7 +90,7 @@ func main() {
 				break
 			}
 			wg.Add(1)
-			go processAndInsert(ctx, wg, repository, appConfig, msg, metricMessagesProcessed, metricInsertedSuccess, metricInsertedFailed)
+			go processAndInsert(ctx, wg, repository, appConfig, msg, metricInsertedSuccess, metricInsertedFailed)
 		case <-ctx.Done():
 			log.Println("Terminating: context cancelled")
 			keepRunning = false
@@ -112,7 +109,7 @@ func main() {
 	}
 }
 
-func processAndInsert(ctx context.Context, wg *sync.WaitGroup, repository *database.Repository, appConfig *config.AppConfig, msgBytes []byte, processedCounter, insertionSuccessCounter, insertionFailCounter prometheus.Counter) {
+func processAndInsert(ctx context.Context, wg *sync.WaitGroup, repository *database.Repository, appConfig *config.AppConfig, msgBytes []byte, insertionSuccessCounter, insertionFailCounter prometheus.Counter) {
 	defer wg.Done()
 
 	msg, err := data.ParseMessageData(msgBytes)
@@ -122,11 +119,9 @@ func processAndInsert(ctx context.Context, wg *sync.WaitGroup, repository *datab
 	}
 	log.Printf("Parsed message: %+v\n", msg)
 
-	processedCounter.Inc()
-
 	err = repository.InsertMsg(ctx, appConfig, msg)
 	if err != nil {
-		log.Printf("Failed to write message to database: %+v: %s", msg, err)
+		log.Printf("Failed to write message to database: %s", err)
 		insertionFailCounter.Inc()
 		return
 	}

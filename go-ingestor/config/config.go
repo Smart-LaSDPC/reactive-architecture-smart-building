@@ -26,6 +26,8 @@ type AppConfig struct {
 		DbName    string `yaml:"dbName"`
 		TableName string `yaml:"tableName"`
 		SslMode   string `yaml:"sslMode"`
+		MinConns  int32  `yaml:"minConns"`
+		MaxConns  int32  `yaml:"maxConns"`
 	} `yaml:"db"`
 }
 
