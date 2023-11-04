@@ -1,7 +1,6 @@
 version: '3.8'
 services:
   generator:
-  generator:
     build:
       context: ./go-generator
       dockerfile: Dockerfile

@@ -10,14 +10,6 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
-var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
-	fmt.Printf("Message %s published on topic %s\n", msg.Payload(), msg.Topic())
-}
-
-var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
-	fmt.Println("Connected")
-}
-
 var connectionLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
 	fmt.Printf("Connection Lost: %s\n", err.Error())
 }
@@ -25,7 +17,7 @@ var connectionLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, 
 type Device struct {
 	DeviceID       string
 	Topic          string
-	PublishTimeout time.Duration
+	publishTimeout time.Duration
 	mqttClient     mqtt.Client
 }
 
@@ -33,8 +25,6 @@ func NewDevice(deviceID string, topic string, publishTimeout time.Duration, mqtt
 	clientID := fmt.Sprintf("%s DeviceID: %s", time.Now().String(), deviceID)
 
 	mqttOptions.SetClientID(clientID)
-	mqttOptions.SetDefaultPublishHandler(messagePubHandler)
-	mqttOptions.OnConnect = connectHandler
 	mqttOptions.OnConnectionLost = connectionLostHandler
 
 	client := mqtt.NewClient(mqttOptions)
@@ -43,14 +33,10 @@ func NewDevice(deviceID string, topic string, publishTimeout time.Duration, mqtt
 		return nil, fmt.Errorf("Failed to connect mqtt client: %s", token.Error())
 	}
 
-	// token = client.Subscribe(topic, 1, nil)
-	// token.Wait()
-	// fmt.Printf("Subscribed to topic %s\n", topic)
-
 	return &Device{
 		DeviceID:       deviceID,
 		Topic:          topic,
-		PublishTimeout: publishTimeout,
+		publishTimeout: publishTimeout,
 		mqttClient:     client,
 	}, nil
 }
@@ -83,7 +69,7 @@ func (d *Device) PublishData(ctx context.Context, start <-chan interface{}, wg *
 				payload := d.generateMsgPayload()
 				token := d.mqttClient.Publish(d.Topic, 0, false, payload)
 				token.Wait()
-				time.Sleep(d.PublishTimeout)
+				time.Sleep(d.publishTimeout)
 			}
 		}
 	}
