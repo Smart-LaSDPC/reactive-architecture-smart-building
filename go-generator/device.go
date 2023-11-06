@@ -1,17 +1,18 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"math/rand"
 	"sync"
+	"log"
 	"time"
+	"context"
+	"math/rand"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
 var connectionLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
-	fmt.Printf("Connection Lost: %s\n", err.Error())
+	log.Printf("Connection Lost: %s\n", err.Error())
 }
 
 type Device struct {
@@ -63,7 +64,7 @@ func (d *Device) PublishData(ctx context.Context, start <-chan interface{}, wg *
 		case <-ctx.Done():
 			return
 		default:
-			if *messagesGenerated < *totalMsgs {
+			if *messagesGenerated < *totalMsgs || *totalMsgs <= 0 {
 				*messagesGenerated += 1
 				payload := d.generateMsgPayload()
 				token := d.mqttClient.Publish(d.Topic, 0, false, payload)

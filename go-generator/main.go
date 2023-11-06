@@ -1,14 +1,15 @@
 package main
 
 import (
-	"context"
 	"fmt"
+	"log"
+	"time"
+	"sync"
+	"context"
+	"syscall"
+	"strconv"
 	"os"
 	"os/signal"
-	"strconv"
-	"sync"
-	"syscall"
-	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
@@ -49,8 +50,9 @@ func main() {
 
 	messagesGenerated := 0
 
-	fmt.Printf("### Start of MQTT synthetic generation\n")
-	fmt.Printf("### Simulating %d devices publishing at a rate of %d messages/second until %d messages are published\n", numDevices, msgsPerSecond, totalMsgs)
+	log.Printf("Start of MQTT synthetic generation\n")
+	log.Printf("Simulating %d devices publishing at a rate of %d messages/second each, until %d messages are published\n", numDevices, msgsPerSecond, totalMsgs)
+	log.Printf("Connecting devices...\n")
 
 	for i := 0; i < numDevices; i++ {
 		deviceID := fmt.Sprintf("%d", i)
@@ -60,7 +62,7 @@ func main() {
 
 		device, err := NewDevice(deviceID, topic, publishTimeoutMs, mqttOptions)
 		if err != nil {
-			fmt.Printf("Failed to connect device %s: %s\n", deviceID, err)
+			log.Printf("Failed to connect device %s: %s\n", deviceID, err)
 			continue
 		}
 
@@ -68,7 +70,7 @@ func main() {
 		go device.PublishData(ctx, start, wg, &messagesGenerated, &totalMsgs)
 	}
 
-	fmt.Printf("### All devices connected. Starting to publish messages.\n")
+	log.Printf("All devices connected. Starting to publish messages.\n")
 
 	// Sinal para comecar a publicar mensagens
 	close(start)
@@ -94,15 +96,15 @@ func main() {
 			fmt.Println("Terminating: via signal")
 			keepRunning = false
 		case <-end:
-			fmt.Printf("Terminating: completed\n")
+			log.Printf("Terminating: completed\n")
 			keepRunning = false
 		}
 	}
 	cancel()
 	wg.Wait()
 
-	fmt.Printf("### End of MQTT synthetic generation\n")
-	fmt.Printf("### Generated %d messages in %s\n", messagesGenerated, elapsedTime)
+	log.Printf("End of MQTT synthetic generation\n")
+	log.Printf("Generated %d messages in %s\n", messagesGenerated, elapsedTime)
 }
 
 func ReadEnvVariable(env, fallback string) string {
