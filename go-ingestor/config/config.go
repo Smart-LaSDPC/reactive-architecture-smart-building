@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
+	"time"
 	"os"
 
 	"gopkg.in/yaml.v2"
@@ -19,15 +20,18 @@ type AppConfig struct {
 		Verbose          bool   `yaml:"verbose"`
 	} `yaml:"kafka"`
 	DB struct {
-		Host      string `yaml:"host"`
-		Port      string `yaml:"port"`
-		User      string `yaml:"user"`
-		Password  string `yaml:"password"`
-		DbName    string `yaml:"dbName"`
-		TableName string `yaml:"tableName"`
-		SslMode   string `yaml:"sslMode"`
-		MinConns  int32  `yaml:"minConns"`
-		MaxConns  int32  `yaml:"maxConns"`
+		Host      	 string `yaml:"host"`
+		Port      	 string `yaml:"port"`
+		User      	 string `yaml:"user"`
+		Password  	 string `yaml:"password"`
+		DbName    	 string `yaml:"dbName"`
+		TableName 	 string `yaml:"tableName"`
+		SslMode   	 string `yaml:"sslMode"`
+		MinConns  	 int32  `yaml:"minConns"`
+		MaxConns  	 int32  `yaml:"maxConns"`
+		QueryTimeout time.Duration `yaml:"queryTimeout"`
+		InsertBatchSize    int `yaml:"insertBatchSize"`
+		InsertBatchTimeout time.Duration `yaml:"insertBatchTimeout"`
 	} `yaml:"db"`
 }
 

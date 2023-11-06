@@ -81,6 +81,10 @@ func main() {
 	messages := consumeMessages(kafkaClient, appConfig, ctx, wg, metricMessagesReceived)
 
 	keepRunning := true
+	batchSize := appConfig.DB.InsertBatchSize
+	msgBatch := make([][]byte, batchSize)
+	
+	currBatchSize := 0
 	for keepRunning {
 		select {
 		case msg, ok := <-messages:
@@ -89,8 +93,14 @@ func main() {
 				keepRunning = false
 				break
 			}
-			wg.Add(1)
-			go processAndInsert(ctx, wg, repository, appConfig, msg, metricInsertedSuccess, metricInsertedFailed)
+			msgBatch[currBatchSize] = msg
+			currBatchSize += 1
+
+			if currBatchSize == batchSize {
+				wg.Add(1)
+				go processBatch(ctx, wg, repository, appConfig, msgBatch, metricInsertedSuccess, metricInsertedFailed)
+				currBatchSize = 0
+			}
 		case <-ctx.Done():
 			log.Println("Terminating: context cancelled")
 			keepRunning = false
@@ -109,23 +119,28 @@ func main() {
 	}
 }
 
-func processAndInsert(ctx context.Context, wg *sync.WaitGroup, repository *database.Repository, appConfig *config.AppConfig, msgBytes []byte, insertionSuccessCounter, insertionFailCounter prometheus.Counter) {
+func processBatch(ctx context.Context, wg *sync.WaitGroup, repository *database.Repository, appConfig *config.AppConfig, msgBatch [][]byte, insertionSuccessCounter, insertionFailCounter prometheus.Counter) {
 	defer wg.Done()
+	var err error
 
-	msg, err := data.ParseMessageData(msgBytes)
+	msgs := []data.MessageData{}
+	for _, msgRaw := range msgBatch {
+		msg, err := data.ParseMessageData(msgRaw)
+		if err != nil {
+			log.Printf("Failed to parse message: %s", err)
+			return
+		}
+		msgs = append(msgs, *msg)
+	} 
+
+	err = repository.InsertMsgBatch(ctx, appConfig, msgs)
 	if err != nil {
-		log.Printf("Failed to parse message: %s", err)
+		log.Printf("Failed to write message batch to database: %s", err)
+		insertionFailCounter.Add( float64(len(msgBatch)))
 		return
 	}
-	log.Printf("Parsed message: %+v\n", msg)
-
-	err = repository.InsertMsg(ctx, appConfig, msg)
-	if err != nil {
-		log.Printf("Failed to write message to database: %s", err)
-		insertionFailCounter.Inc()
-		return
-	}
-	insertionSuccessCounter.Inc()
+	log.Printf("Successfully inserted message batch into database\n")
+	insertionSuccessCounter.Add(float64(len(msgBatch)))
 }
 
 func consumeMessages(client sarama.ConsumerGroup, appConfig *config.AppConfig, ctx context.Context, wg *sync.WaitGroup, receivedCounter prometheus.Counter) chan []byte {
