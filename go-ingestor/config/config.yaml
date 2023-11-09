@@ -9,11 +9,12 @@ kafka:
 db:
     host: 172.100.10.20
     port: 5432
-    sslMode: disable
-    minConns: 25
-    maxConns: 25
-    queryTimeout: 10s
     user: admin
     password: admin
+    sslMode: disable
     dbName: tcc_icmc
     tableName: temperature_moisture
+    conns: 25
+    queryTimeout: 10s
+    batchSize: 500
+    batchFlushTimeout: 5s

@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/IBM/sarama"
 	_ "github.com/lib/pq"
@@ -80,13 +81,33 @@ func main() {
 
 	messages := consumeMessages(kafkaClient, appConfig, ctx, wg, metricMessagesReceived)
 
-	keepRunning := true
-	batchSize := appConfig.DB.InsertBatchSize
+	batchSize := appConfig.DB.BatchSize
+	flushTimeout := appConfig.DB.BatchFlushTimeout
+
 	msgBatch := make([][]byte, batchSize)
-	
+
+	lastWrittenTime := time.Now()
 	currBatchSize := 0
+
+	flushMessages := make(chan bool)
+	go func(){
+		for {
+			if time.Since(lastWrittenTime) > flushTimeout {
+				lastWrittenTime = time.Now()
+				flushMessages <- true
+			}
+		}
+	}()
+
+	keepRunning := true
 	for keepRunning {
 		select {
+		case <-flushMessages:
+			if currBatchSize > 0 {
+				wg.Add(1)
+				go processBatch(ctx, wg, repository, appConfig, msgBatch[:currBatchSize], metricInsertedSuccess, metricInsertedFailed)
+				currBatchSize = 0
+			}
 		case msg, ok := <-messages:
 			if !ok {
 				log.Println("Terminating: done receiving messages")
@@ -99,6 +120,7 @@ func main() {
 			if currBatchSize == batchSize {
 				wg.Add(1)
 				go processBatch(ctx, wg, repository, appConfig, msgBatch, metricInsertedSuccess, metricInsertedFailed)
+				lastWrittenTime = time.Now()
 				currBatchSize = 0
 			}
 		case <-ctx.Done():

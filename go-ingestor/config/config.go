@@ -20,18 +20,17 @@ type AppConfig struct {
 		Verbose          bool   `yaml:"verbose"`
 	} `yaml:"kafka"`
 	DB struct {
-		Host      	 string `yaml:"host"`
-		Port      	 string `yaml:"port"`
-		User      	 string `yaml:"user"`
-		Password  	 string `yaml:"password"`
-		DbName    	 string `yaml:"dbName"`
-		TableName 	 string `yaml:"tableName"`
-		SslMode   	 string `yaml:"sslMode"`
-		MinConns  	 int32  `yaml:"minConns"`
-		MaxConns  	 int32  `yaml:"maxConns"`
-		QueryTimeout time.Duration `yaml:"queryTimeout"`
-		InsertBatchSize    int `yaml:"insertBatchSize"`
-		InsertBatchTimeout time.Duration `yaml:"insertBatchTimeout"`
+		Host      	 	  string `yaml:"host"`
+		Port      	 	  string `yaml:"port"`
+		User      	 	  string `yaml:"user"`
+		Password  	 	  string `yaml:"password"`
+		SslMode   	 	  string `yaml:"sslMode"`
+		DbName    	 	  string `yaml:"dbName"`
+		TableName 	 	  string `yaml:"tableName"`
+		Conns  	 		  int32  `yaml:"conns"`
+		QueryTimeout 	  time.Duration `yaml:"queryTimeout"`
+		BatchSize    	  int `yaml:"batchSize"`
+		BatchFlushTimeout time.Duration `yaml:"batchFlushTimeout"`
 	} `yaml:"db"`
 }
 

@@ -19,7 +19,7 @@ func NewRepository(appConfig *config.AppConfig) (*Repository, error) {
 	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		appConfig.DB.Host, appConfig.DB.Port, appConfig.DB.User, appConfig.DB.Password, appConfig.DB.DbName, appConfig.DB.SslMode)
 
-	clientPool, err := pg.NewPostgresConnectionPool(connStr, appConfig.DB.QueryTimeout, appConfig.DB.MinConns, appConfig.DB.MaxConns)
+	clientPool, err := pg.NewPostgresConnectionPool(connStr, appConfig.DB.QueryTimeout, appConfig.DB.Conns, appConfig.DB.Conns)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open connection to database: %s", err)
 	}
