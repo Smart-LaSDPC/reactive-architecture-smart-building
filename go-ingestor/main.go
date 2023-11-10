@@ -92,9 +92,14 @@ func main() {
 	flushMessages := make(chan bool)
 	go func(){
 		for {
-			if time.Since(lastWrittenTime) > flushTimeout {
-				lastWrittenTime = time.Now()
-				flushMessages <- true
+			select {
+			case <- ctx.Done():
+				close(flushMessages)
+				return
+			default:
+				if time.Since(lastWrittenTime) > flushTimeout {
+					flushMessages <- true
+				}
 			}
 		}
 	}()
@@ -106,6 +111,7 @@ func main() {
 			if currBatchSize > 0 {
 				wg.Add(1)
 				go processBatch(ctx, wg, repository, appConfig, msgBatch[:currBatchSize], metricInsertedSuccess, metricInsertedFailed)
+				lastWrittenTime = time.Now()
 				currBatchSize = 0
 			}
 		case msg, ok := <-messages:
